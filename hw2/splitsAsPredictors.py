@@ -188,7 +188,7 @@ def regressThis(xResultSet, yResultSet, reportTitle):
 ####################### FUNCTIONS END #########################
 
 # Define Variables
-sourceURL = 'http://aravaiparunning.com/results/2012JJResults100m.html'
+sourceURL = 'http://aravaiparunning.com/results/2012JJResults100m.htm'
 #fileURL = '../../data/hw2/2012JJResults100m.html'
 fileURL = "2012JJResults100m.html"
 dir_out = '../../data/hw2/'
