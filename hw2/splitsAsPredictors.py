@@ -188,7 +188,7 @@ def regressThis(xResultSet, yResultSet, reportTitle):
 ####################### FUNCTIONS END #########################
 
 # Define Variables
-sourceURL = 'http://aravaiparunning.com/results/2012JJResults100m.html'
+sourceURL = 'http://aravaiparunning.com/results/2012JJResults100m.htm'
 #fileURL = '../../data/hw2/2012JJResults100m.html'
 fileURL = "2012JJResults100m.html"
 dir_out = '../../data/hw2/'
@@ -210,7 +210,7 @@ if urlData == None:
 #NEXT LINE IS GOOD BUT COMMENTED OUT SO I DON'T HAVE TO RE-POPULATE DB EVERY TIME
 populateDatabase(dbConn,urlData)
 
-# Test the whole field on separate split times, not elapsed times
+# Test the whole field on cumulative split times
 query ="SELECT e.s1, e.s2, e.s3, e.s4, e.s5, e.s6 " + \
        "FROM Elapsed_Splits as e, Runner as r " + \
        "WHERE e.Runner = r.Runner "+ \
@@ -225,6 +225,7 @@ query ="SELECT r.FinishTime " + \
 yResultSet = np.asarray(executeQuery(dbConn, query))
 
 regressThis(xResultSet, yResultSet,"Elapsed Splits for all Finishers")
+
 
 # Test the top-half of the field on deviation from their cum avg pace.
 query = "SELECT d.s1, d.s2, d.s3, d.s4, d.s5, d.s6 " + \
@@ -264,6 +265,7 @@ query = "SELECT r.FInishTime "+ \
 yResultSet = np.asarray(executeQuery(dbConn, query))
 regressThis(xResultSet, yResultSet, "Delta-MeanPace, Men 35-45\nWas this lap over or under pace?")
 
+
 # How does the first half affect the final time?
 query = "SELECT d.s1, d.s2, d.s3 "+ \
         "FROM Delta_Splits as d, Runner as r "+ \
@@ -277,6 +279,7 @@ query = "SELECT r.FinishTime "+ \
 yResultSet = np.asarray(executeQuery(dbConn, query))
 
 regressThis(xResultSet, yResultSet, "First 3 laps, all finishers")
+
 
 # How does the second half affect the final time?
 query = "SELECT d.s4, d.s5, d.s6 "+ \
