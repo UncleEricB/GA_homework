@@ -47,7 +47,7 @@ def scrape_from_google(email, password, ss_source, wb_source):
 
 
 def load_from_file(filename):
-
+    # Open the file, read it, close it - or die gracefully
     try:
         file_handle = open(filename, 'r')
         file_data = file_handle.read()
@@ -66,17 +66,23 @@ def parse_raw_data(raw_data, good_mpg):
 
     entries = re.compile('\n\n\n', re.M).split(raw_data)
     for entry in entries:
-        # Split entry into rows
         tDict = {}
+        # Next line splits on newline, breaks entry into separate lines
         rows = re.compile('\n').split(entry)   
         for row in rows:
+            # If row is empty (sometimes happens at the first or last line), then skip it
             if row == '':
                 continue
+            # Separate row into key and value, split on colon with possible space after it
             key, value = re.compile(':\s*').split(row,2)
             if (value == "None") or (key == ''):
+                # if you don't get values, skip to next row
                 continue  # Go to the next row
+            # Otherwise update the temp dictionary
             tDict.update({str(key):value})
+
         if '_cn6ca' in tDict.keys():   # _cn6ca is the unique identifier
+            # Update the big dictionary that is going to turn into X and y
             data_dict.update({str(tDict['_cn6ca']):
                 {'deltamiles':tDict['deltamiles'],
                  'costOfFile':tDict['_chk2m'],
@@ -88,11 +94,13 @@ def parse_raw_data(raw_data, good_mpg):
                  'tripometer':tDict['_ciyn3']
                 }})
 
+    # Some entries were not gas purchases, so if no gallonsOfGas, then don't could it
     for key in data_dict.keys():
         if float(data_dict[key]['gallonsOfGas']) >= 0.0:
             X.append([float(data_dict[key]['gallonsOfGas']),
                       int(data_dict[key]['deltadays'])
                      ])
+        # Binarize milesPerGallon based on good_mpg cutoff
         if float(data_dict[key]['milesPerGallon']) >= good_mpg:
             y.append(1)
         else:
@@ -111,6 +119,7 @@ def logreg(X,y):
     mean_auc = 0.0
 
     n = 10  # Repeat cross-validation 10x
+    # cross validate n times
     for i in range(n):
         x_train, x_test, y_train, y_test = cross_validation.train_test_split(X,y, test_size=0.20, random_state=i*SEED)
         x_train = encoder.transform(x_train)
@@ -128,6 +137,7 @@ def logreg(X,y):
 
 
 def output_kmeans(estimator_model,data, n_digits):
+    # Prints out a number of metrics about our k-means model
     estimator = KMeans(init=estimator_model, n_clusters=n_digits, n_init=10)
     t0=time()
     estimator.fit(data)
@@ -153,15 +163,18 @@ def kmeans(X,y):
 
 #################### FUNCTIONS END #########################
 
+if __name__ == '__main__':
+    # Load it from the web.  od5 is the worksheet id.  Have to dig that out manually
+    #raw_data = scrape_from_google('eric.blumenau@gmail.com','xjkhiarembsxiyif','Motorcycle Log','https://spreadsheets.google.com/feeds/worksheets/tqi5NZjF1KVTLk0JI2TsnPg/private/full/od5')
 
-# Load it from the web.  od5 is the worksheet id.  Have to dig that out manually
-#raw_data = scrape_from_google('eric.blumenau@gmail.com','xjkhiarembsxiyif','Motorcycle Log','https://spreadsheets.google.com/feeds/worksheets/tqi5NZjF1KVTLk0JI2TsnPg/private/full/od5')
+    # or read it from a file
+    raw_data = load_from_file("ML.raw")
+    X,y = parse_raw_data(raw_data, 38.0)
+    SEED = 13
 
-# or read it from a file
-raw_data = load_from_file("ML.raw")
-X,y = parse_raw_data(raw_data, 38.0)
-SEED = 13
-
-logreg(X,y)
-kmeans(X,y)
+    # Classify by Logistic Regressioni
+    logreg(X,y)
+    
+    # Classify by k-means
+    kmeans(X,y)
 
