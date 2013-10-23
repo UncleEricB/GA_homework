@@ -186,66 +186,67 @@ def regressThis(xResultSet, yResultSet, reportTitle):
     #xTrain, xTest, yTrain yTest = cross_validation.train_test_split(xResultSet, yResultSet, test_size = 0.2, random_state=SEED)
     
 ####################### FUNCTIONS END #########################
+if __name__ == '__main__':
 
-# Define Variables
-sourceURL = 'http://aravaiparunning.com/results/2012JJResults100m.htm'
-#fileURL = '../../data/hw2/2012JJResults100m.html'
-fileURL = "2012JJResults100m.html"
-dir_out = '../../data/hw2/'
-urlData = None  # Default, to check if anything was read in later
-resultSet = None
-dbConn = None
+    # Define Variables
+    sourceURL = 'http://aravaiparunning.com/results/2012JJResults100m.htm'
+    #fileURL = '../../data/hw2/2012JJResults100m.html'
+    fileURL = "2012JJResults100m.html"
+    dir_out = '../../data/hw2/'
+    urlData = None  # Default, to check if anything was read in later
+    resultSet = None
+    dbConn = None
 
-# Connect to DB
-dbConn = dbConnect()
+    # Connect to DB
+    dbConn = dbConnect()
 
-# Get the HTML data
-#urlData = scrapeURL(sourceURL)   # This works but sometimes I'm working offline so I use next line
-urlData = readURLFile(fileURL)  # This works too but I have everything in sqlite now so save cycles
-if urlData == None:
-    print "Trouble parsing URL data!"
-    sys.exit(1)
+    # Get the HTML data
+    #urlData = scrapeURL(sourceURL)   # This works but sometimes I'm working offline so I use next line
+    urlData = readURLFile(fileURL)  # This works too but I have everything in sqlite now so save cycles
+    if urlData == None:
+        print "Trouble parsing URL data!"
+        sys.exit(1)
 
-# Build the data structure
-#NEXT LINE IS GOOD BUT COMMENTED OUT SO I DON'T HAVE TO RE-POPULATE DB EVERY TIME
-populateDatabase(dbConn,urlData)
+    # Build the data structure
+    #NEXT LINE IS GOOD BUT COMMENTED OUT SO I DON'T HAVE TO RE-POPULATE DB EVERY TIME
+    populateDatabase(dbConn,urlData)
 
-# Test the whole field on cumulative split times
-query ="SELECT e.s1, e.s2, e.s3, e.s4, e.s5, e.s6 " + \
+    # Test the whole field on cumulative split times
+    query ="SELECT e.s1, e.s2, e.s3, e.s4, e.s5, e.s6 " + \
        "FROM Elapsed_Splits as e, Runner as r " + \
        "WHERE e.Runner = r.Runner "+ \
        "AND r.FinishTime > 0 " + \
        "ORDER BY r.Place ASC"
-xResultSet = np.asarray(executeQuery(dbConn,query))
+    xResultSet = np.asarray(executeQuery(dbConn,query))
 
-query ="SELECT r.FinishTime " + \
+    query ="SELECT r.FinishTime " + \
        "FROM Runner as r " + \
        "WHERE r.FinishTime > 0 " + \
        "ORDER BY r.Place ASC"
-yResultSet = np.asarray(executeQuery(dbConn, query))
+    yResultSet = np.asarray(executeQuery(dbConn, query))
 
-regressThis(xResultSet, yResultSet,"Elapsed Splits for all Finishers")
+    regressThis(xResultSet, yResultSet,"Elapsed Splits for all Finishers")
 
 
-# Test the top-half of the field on deviation from their cum avg pace.
-query = "SELECT d.s1, d.s2, d.s3, d.s4, d.s5, d.s6 " + \
+    # Test the top-half of the field on deviation from their cum avg pace.
+    query = "SELECT d.s1, d.s2, d.s3, d.s4, d.s5, d.s6 " + \
         "FROM Delta_Splits as d, Runner as r " + \
         "WHERE r.Place < 183 " + \
         "  AND r.Runner = d.Runner " + \
         "ORDER BY r.Place ASC"
-xResultSet = np.asarray(executeQuery(dbConn, query))
+    xResultSet = np.asarray(executeQuery(dbConn, query))
 
-query = "SELECT r.FinishTime "+ \
+    query = "SELECT r.FinishTime "+ \
         "FROM Runner as r " + \
         "WHERE r.Place < 183 "+ \
         "ORDER BY r.Place ASC"
-yResultSet = np.asarray(executeQuery(dbConn, query))
+    yResultSet = np.asarray(executeQuery(dbConn, query))
 
-regressThis(xResultSet, yResultSet, "Delta Splits, Top Half of Field")
+    regressThis(xResultSet, yResultSet, "Delta Splits, Top Half of Field")
 
 
-# Test delta - mean for men 35-45
-query = "SELECT d.s1-(r.MeanPace*15.4) as dm1, d.s2-(r.MeanPace*15.4) as dm2, "+ \
+    # Test delta - mean for men 35-45
+    query = "SELECT d.s1-(r.MeanPace*15.4) as dm1, d.s2-(r.MeanPace*15.4) as dm2, "+ \
         "d.s3-(r.MeanPace*15.4) as dm3, d.s4-(r.MeanPace*15.4) as dm4, "+ \
         "d.s5-(r.MeanPace*15.4) as dm5, d.s6-(r.MeanPace*15.4) as dm6 "+ \
         "FROM Delta_Splits as d, Runner as r " + \
@@ -254,47 +255,46 @@ query = "SELECT d.s1-(r.MeanPace*15.4) as dm1, d.s2-(r.MeanPace*15.4) as dm2, "+
         "  AND r.Gender = 'Male' "+ \
         "  AND r.Runner = d.Runner "+ \
         "ORDER BY r.Place ASC"
-xResultSet = np.asarray(executeQuery(dbConn, query))
+    xResultSet = np.asarray(executeQuery(dbConn, query))
 
-query = "SELECT r.FInishTime "+ \
+    query = "SELECT r.FInishTime "+ \
         "FROM Runner as r "+ \
         "WHERE r.Age >= 35 "+ \
         "  AND r.Age <= 45 "+ \
         "  AND r.Gender = 'Male' "+ \
         "ORDER BY r.Place ASC"
-yResultSet = np.asarray(executeQuery(dbConn, query))
-regressThis(xResultSet, yResultSet, "Delta-MeanPace, Men 35-45\nWas this lap over or under pace?")
+    yResultSet = np.asarray(executeQuery(dbConn, query))
+    regressThis(xResultSet, yResultSet, "Delta-MeanPace, Men 35-45\nWas this lap over or under pace?")
 
 
-# How does the first half affect the final time?
-query = "SELECT d.s1, d.s2, d.s3 "+ \
+    # How does the first half affect the final time?
+    query = "SELECT d.s1, d.s2, d.s3 "+ \
         "FROM Delta_Splits as d, Runner as r "+ \
         "WHERE d.Runner = r.Runner "+ \
         "ORDER BY r.Place ASC"
-xResultSet = np.asarray(executeQuery(dbConn, query))
+    xResultSet = np.asarray(executeQuery(dbConn, query))
 
-query = "SELECT r.FinishTime "+ \
+    query = "SELECT r.FinishTime "+ \
         "FROM Runner as r "+ \
         "ORDER by r.Place ASC"
-yResultSet = np.asarray(executeQuery(dbConn, query))
+    yResultSet = np.asarray(executeQuery(dbConn, query))
+    regressThis(xResultSet, yResultSet, "First 3 laps, all finishers")
 
-regressThis(xResultSet, yResultSet, "First 3 laps, all finishers")
 
-
-# How does the second half affect the final time?
-query = "SELECT d.s4, d.s5, d.s6 "+ \
+    # How does the second half affect the final time?
+    query = "SELECT d.s4, d.s5, d.s6 "+ \
         "FROM Delta_Splits as d, Runner as r "+ \
         "WHERE d.Runner = r.Runner "+ \
         "ORDER BY r.Place ASC"
-xResultSet = np.asarray(executeQuery(dbConn, query))
+    xResultSet = np.asarray(executeQuery(dbConn, query))
 
-query = "SELECT r.FinishTime "+ \
+    query = "SELECT r.FinishTime "+ \
         "FROM Runner as r "+ \
         "ORDER by r.Place ASC"
-yResultSet = np.asarray(executeQuery(dbConn, query))
+    yResultSet = np.asarray(executeQuery(dbConn, query))
+    regressThis(xResultSet, yResultSet, "Second 3 laps, all finishers")
 
-regressThis(xResultSet, yResultSet, "Second 3 laps, all finishers")
-# Finalize
-# Close database handle
-dbConn.close()
+    # Finalize
+    # Close database handle
+    dbConn.close()
 
